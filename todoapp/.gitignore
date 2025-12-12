@@ -1,0 +1,21 @@
+# Environment folders
+venv/
+.venv/
+.env
+
+# Python cache
+_pycache_/
+*.pyc
+
+# SQLite DB (optional)
+db.sqlite3
+
+# IDE folders
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# OS/System files
+.DS_Store
