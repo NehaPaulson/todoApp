@@ -25,6 +25,7 @@ from .views import hello_view
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/hello/', hello_view),
-    path('api/todoapp/', include('todoapp.urls')),
+    path('api/todoapp/', include('feature.todoapp.urls')),
+    path('api/music/', include('feature.music.urls')),
 
 ]

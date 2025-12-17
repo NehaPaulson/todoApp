@@ -1,0 +1,61 @@
+from django.db import models
+
+
+class Music(models.Model):
+    song_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    singer = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "music"
+        app_label = "music"  # Custom table name
+
+    @staticmethod
+    def create(song_name: str, description: str = "", singer: str = ""):
+        music = Music.objects.create(
+            song_name=song_name,
+            description=description,
+            singer=singer
+        )
+        return music
+
+    @staticmethod
+    def get_all():
+        return Music.objects.all()
+
+    @staticmethod
+    def get_one(music_id: int):
+        return Music.objects.filter(id=music_id).first()
+
+    @staticmethod
+    def update(
+        music_id: int,
+        song_name: str = None,
+        description: str = None,
+        singer: str = None
+    ):
+        music = Music.objects.filter(id=music_id).first()
+        if not music:
+            return None
+
+        if song_name is not None:
+            music.song_name = song_name
+
+        if description is not None:
+            music.description = description
+
+        if singer is not None:
+            music.singer = singer
+
+        music.save()
+        return music
+
+    @staticmethod
+    def delete_one(music_id: int):
+        music = Music.objects.filter(id=music_id).first()
+        if not music:
+            return False
+
+        music.delete()
+        return True
