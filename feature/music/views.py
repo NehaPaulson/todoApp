@@ -1,53 +1,45 @@
-from dataclasses import asdict
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.request import Request
 
-from feature.music.model.models import Music
-from feature.music.serializer.response.music_response import MusicResponse
+from feature.music.serializer.request.create_music_request import CreateMusicRequest
+from feature.music.serializer.request.update_music_request import UpdateMusicRequest
+from feature.music.views import MusicView
 
 
-class MusicView:
+view = MusicView()
 
-    @staticmethod
-    def create(data):
-        music = Music.objects.create(
-            song_name=data.song_name,
-            description=data.description,
-            singer=data.singer,
-        )
-        return Response(MusicResponse(music).data, status=status.HTTP_201_CREATED)
+
+class MusicController:
 
     @staticmethod
-    def get_all():
-        musics = Music.objects.all()
-        return Response(MusicResponse(musics, many=True).data)
+    @api_view(["POST"])
+    def create(request: Request):
+        serializer = CreateMusicRequest(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        params = serializer.save()
+        return view.create(params)
 
     @staticmethod
-    def get_one(id):
-        music = Music.objects.filter(id=id).first()
-        if not music:
-            return Response({"message": "Not found"}, status=404)
-        return Response(MusicResponse(music).data)
+    @api_view(["GET"])
+    def get_all(request: Request):
+        return view.get_all(request)
 
     @staticmethod
-    def update(id, data):
-        music = Music.objects.filter(id=id).first()
-        if not music:
-            return Response({"message": "Not found"}, status=404)
-
-        # ✅ FIX IS HERE
-        for field, value in asdict(data).items():
-            if value is not None:
-                setattr(music, field, value)
-
-        music.save()
-        return Response(MusicResponse(music).data)
+    @api_view(["GET"])
+    def get_one(request: Request, id: int):
+        return view.get_one(id)
 
     @staticmethod
-    def delete(id):
-        music = Music.objects.filter(id=id).first()
-        if not music:
-            return Response({"message": "Not found"}, status=404)
+    @api_view(["PUT"])
+    def update(request: Request, id: int):
+        serializer = UpdateMusicRequest(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        music.delete()
-        return Response({"message": "Deleted successfully"})
+        params = serializer.save()
+        return view.update(id, params)
+
+    @staticmethod
+    @api_view(["DELETE"])
+    def delete(request: Request, id: int):
+        return view.delete(id)

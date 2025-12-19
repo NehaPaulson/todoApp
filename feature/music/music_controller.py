@@ -17,11 +17,9 @@ class MusicController:
             return MusicView.create(serializer.validated_data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @staticmethod
     @api_view(["GET"])
     def get_all(request):
-        return MusicView.get_all()
-
+        return MusicView.get_all(request)
     @staticmethod
     @api_view(["GET"])
     def get_one(request, id):
