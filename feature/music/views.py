@@ -1,45 +1,84 @@
-from rest_framework.decorators import api_view
-from rest_framework.request import Request
+from dataclasses import asdict
+from rest_framework.response import Response
+from rest_framework import status
 
-from feature.music.serializer.request.create_music_request import CreateMusicRequest
-from feature.music.serializer.request.update_music_request import UpdateMusicRequest
-from feature.music.views import MusicView
-
-
-view = MusicView()
+from feature.music.model.models import Music
+from feature.music.serializer.response.music_response import MusicResponse
+from feature.common.utils import Utils
 
 
-class MusicController:
+class MusicView:
 
     @staticmethod
-    @api_view(["POST"])
-    def create(request: Request):
-        serializer = CreateMusicRequest(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        params = serializer.save()
-        return view.create(params)
-
-    @staticmethod
-    @api_view(["GET"])
-    def get_all(request: Request):
-        return view.get_all(request)
-
-    @staticmethod
-    @api_view(["GET"])
-    def get_one(request: Request, id: int):
-        return view.get_one(id)
+    def create(data):
+        music = Music.objects.create(
+            song_name=data.song_name,
+            description=data.description,
+            singer=data.singer,
+        )
+        data = MusicResponse(music).data
+        return Response(
+            Utils.success_response("Music created successfully", data),
+            status=status.HTTP_201_CREATED
+        )
 
     @staticmethod
-    @api_view(["PUT"])
-    def update(request: Request, id: int):
-        serializer = UpdateMusicRequest(data=request.data)
-        serializer.is_valid(raise_exception=True)
+    def get_all(request):
+        limit = int(request.query_params.get("limit", 10))
+        offset = int(request.query_params.get("offset", 0))
 
-        params = serializer.save()
-        return view.update(id, params)
+        queryset = Music.objects.all()
+        total = queryset.count()
+
+        musics = queryset[offset: offset + limit]
+        data = MusicResponse(musics, many=True).data
+
+        return Response(
+            Utils.paginated_response(
+                data=data,
+                total=total,
+                limit=limit,
+                offset=offset,
+                message="Data fetched successfully"
+            )
+        )
 
     @staticmethod
-    @api_view(["DELETE"])
-    def delete(request: Request, id: int):
-        return view.delete(id)
+    def get_one(id):
+        music = Music.objects.filter(id=id).first()
+        if not music:
+            return Response(
+                Utils.error_response("Music not found", f"id {id} does not exist"),
+                status=404
+            )
+        data = MusicResponse(music).data
+        return Response(Utils.success_response("Data fetched successfully", data))
+
+    @staticmethod
+    def update(id, data):
+        music = Music.objects.filter(id=id).first()
+        if not music:
+            return Response(
+                Utils.error_response("Music not found", f"id {id} does not exist"),
+                status=404
+            )
+
+        for field, value in asdict(data).items():
+            if value is not None:
+                setattr(music, field, value)
+
+        music.save()
+        data = MusicResponse(music).data
+        return Response(Utils.success_response("Music updated successfully", data))
+
+    @staticmethod
+    def delete(id):
+        music = Music.objects.filter(id=id).first()
+        if not music:
+            return Response(
+                Utils.error_response("Music not found", f"id {id} does not exist"),
+                status=404
+            )
+
+        music.delete()
+        return Response(Utils.success_response("Music deleted successfully"))
