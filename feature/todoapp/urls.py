@@ -1,5 +1,5 @@
 from django.urls import path
-from todoapp.todo_controller import (
+from feature.todoapp.todo_controller import (
     create, get_all, get_one, update, delete
 )
 
