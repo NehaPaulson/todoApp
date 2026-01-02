@@ -5,17 +5,29 @@ from rest_framework import status
 from feature.music.model.models import Music
 from feature.music.serializer.response.music_response import MusicResponse
 from feature.common.utils import Utils
+from feature.singer.model.models import Singer
 
 
 class MusicView:
 
     @staticmethod
     def create(data):
+        singer = Singer.get_by_name(data.singer)
+        if not singer:
+            return Response(
+                Utils.error_response(
+                    "Singer not found",
+                    f"singer_name '{data.singer}' does not exist"
+                ),
+                status=status.HTTP_404_NOT_FOUND
+            )
+
         music = Music.objects.create(
             song_name=data.song_name,
             description=data.description,
-            singer=data.singer,
+            singer=singer,   # ✅ FK object
         )
+
         data = MusicResponse(music).data
         return Response(
             Utils.success_response("Music created successfully", data),
@@ -63,7 +75,22 @@ class MusicView:
                 status=404
             )
 
-        for field, value in asdict(data).items():
+        update_data = asdict(data)
+
+        if update_data.get("singer") is not None:
+            singer = Singer.get_by_name(update_data["singer"])
+            if not singer:
+                return Response(
+                    Utils.error_response(
+                        "Singer not found",
+                        f"singer_name '{update_data['singer']}' does not exist"
+                    ),
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            music.singer = singer
+
+        for field in ["song_name", "description"]:
+            value = update_data.get(field)
             if value is not None:
                 setattr(music, field, value)
 

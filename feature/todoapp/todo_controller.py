@@ -4,6 +4,9 @@ from rest_framework.request import Request
 from feature.todoapp.views import TodoView
 from feature.todoapp.serializer.request.create_todo_request import CreateTodoRequestSerializer
 from feature.todoapp.serializer.request.update_todo_request import UpdateTodoRequestSerializer
+from feature.todoapp.serializer.request.get_all_todo_request import GetAllTodoRequestSerializer
+from feature.todoapp.serializer.request.get_one_todo_request import GetOneTodoRequestSerializer
+from feature.todoapp.serializer.request.delete_todo_request import DeleteTodoRequestSerializer
 
 
 view = TodoView()
@@ -20,11 +23,17 @@ def create(request: Request):
 
 @api_view(["GET"])
 def get_all(request: Request):
+    serializer = GetAllTodoRequestSerializer(data=request.query_params)
+    serializer.is_valid(raise_exception=True)
+
     return view.get_all(request)
 
 
 @api_view(["GET"])
 def get_one(request: Request, id: int):
+    serializer = GetOneTodoRequestSerializer(data={"id": id})
+    serializer.is_valid(raise_exception=True)
+
     return view.get_one(id)
 
 
@@ -39,4 +48,7 @@ def update(request: Request, id: int):
 
 @api_view(["DELETE"])
 def delete(request: Request, id: int):
+    serializer = DeleteTodoRequestSerializer(data={"id": id})
+    serializer.is_valid(raise_exception=True)
+
     return view.delete(id)

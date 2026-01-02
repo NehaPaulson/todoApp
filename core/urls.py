@@ -27,5 +27,5 @@ urlpatterns = [
     path('api/hello/', hello_view),
     path('api/todoapp/', include('feature.todoapp.urls')),
     path('api/music/', include('feature.music.urls')),
-
+    path('api/singer/', include('feature.singer.urls')),
 ]

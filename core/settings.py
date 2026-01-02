@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'api',
     'feature.todoapp',
     'feature.music',
+    'feature.singer'
 ]
 
 MIDDLEWARE = [
