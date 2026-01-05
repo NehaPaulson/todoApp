@@ -1,76 +1,67 @@
 from dataclasses import asdict
-from rest_framework.response import Response
-from rest_framework import status
 
 from feature.singer.model.models import Singer
+from feature.common.common import Common
 from feature.singer.serializer.response.singer_response import SingerResponse
-from feature.common.utils import Utils
 
 
 class SingerView:
 
+    @Common(
+        response_handler=SingerResponse,
+        message="Singer created successfully"
+    ).exception_handler
     def create(self, params):
-        singer = Singer.create(
+        return Singer.create(
             singer_name=params.singer_name,
             age=params.age,
             years_of_experience=params.years_of_experience
         )
-        data = SingerResponse(singer).data
-        return Response(
-            Utils.success_response("Singer created successfully", data),
-            status=status.HTTP_201_CREATED
-        )
 
+    @Common(
+        response_handler=SingerResponse,
+        message="Data fetched successfully"
+    ).exception_handler
     def get_all(self, request):
         limit = int(request.query_params.get("limit", 10))
         offset = int(request.query_params.get("offset", 0))
 
         queryset = Singer.get_all()
-        total = queryset.count()
+        return queryset[offset: offset + limit]
 
-        singers = queryset[offset: offset + limit]
-        data = SingerResponse(singers, many=True).data
-
-        return Response(
-            Utils.paginated_response(
-                data=data,
-                total=total,
-                limit=limit,
-                offset=offset,
-                message="Data fetched successfully"
-            )
-        )
-
-    def get_one(self, singer_id):
+    @Common(
+        response_handler=SingerResponse,
+        message="Data fetched successfully"
+    ).exception_handler
+    def get_one(self, singer_id: int):
         singer = Singer.get_one(singer_id)
         if not singer:
-            return Response(
-                Utils.error_response("Singer not found", f"id {singer_id} does not exist"),
-                status=404
-            )
-        data = SingerResponse(singer).data
-        return Response(Utils.success_response("Data fetched successfully", data))
+            raise ValueError(f"id {singer_id} does not exist")
+        return singer
 
-    def update(self, singer_id, params):
-        singer = Singer.update(
-            singer_id,
-            singer_name=params.singer_name,
-            age=params.age,
-            years_of_experience=params.years_of_experience
-        )
+    @Common(
+        response_handler=SingerResponse,
+        message="Singer updated successfully"
+    ).exception_handler
+    def update(self, singer_id: int, params):
+        singer = Singer.get_one(singer_id)
         if not singer:
-            return Response(
-                Utils.error_response("Singer not found", f"id {singer_id} does not exist"),
-                status=404
-            )
-        data = SingerResponse(singer).data
-        return Response(Utils.success_response("Singer updated successfully", data))
+            raise ValueError(f"id {singer_id} does not exist")
 
-    def delete(self, singer_id):
-        success = Singer.delete_one(singer_id)
-        if not success:
-            return Response(
-                Utils.error_response("Singer not found", f"id {singer_id} does not exist"),
-                status=404
-            )
-        return Response(Utils.success_response("Singer deleted successfully"))
+        for key, value in asdict(params).items():
+            if value is not None:
+                setattr(singer, key, value)
+
+        singer.save()
+        return singer
+
+    @Common(
+        message="Singer deleted successfully"
+    ).exception_handler
+    def delete(self, singer_id: int):
+        singer = Singer.get_one(singer_id)
+        if not singer:
+            raise ValueError(f"id {singer_id} does not exist")
+
+        singer.delete()
+        return {}

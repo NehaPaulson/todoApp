@@ -28,6 +28,14 @@ class Music(models.Model):
         )
 
     @staticmethod
+    def get_all():
+        return Music.objects.all()
+
+    @ staticmethod
+    def get_one(music_id: int):
+        return Music.objects.filter(id=music_id).first()
+
+    @staticmethod
     def update(
         music_id: int,
         song_name: str = None,
@@ -49,3 +57,11 @@ class Music(models.Model):
 
         music.save()
         return music
+
+    @staticmethod
+    def delete_one(music_id: int):
+        music = Music.objects.filter(id=music_id).first()
+        if not music:
+            return False
+        music.delete()
+        return True

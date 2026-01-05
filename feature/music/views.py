@@ -1,111 +1,82 @@
 from dataclasses import asdict
-from rest_framework.response import Response
-from rest_framework import status
 
 from feature.music.model.models import Music
-from feature.music.serializer.response.music_response import MusicResponse
-from feature.common.utils import Utils
 from feature.singer.model.models import Singer
+from feature.common.common import Common
+from feature.music.serializer.response.music_response import MusicResponse
 
 
 class MusicView:
 
-    @staticmethod
-    def create(data):
-        singer = Singer.get_by_name(data.singer)
+    @Common(
+        response_handler=MusicResponse,
+        message="Music created successfully"
+    ).exception_handler
+    def create(self, params):
+        singer = Singer.get_by_name(params.singer)
         if not singer:
-            return Response(
-                Utils.error_response(
-                    "Singer not found",
-                    f"singer_name '{data.singer}' does not exist"
-                ),
-                status=status.HTTP_404_NOT_FOUND
-            )
+            raise ValueError(f"singer_name '{params.singer}' does not exist")
 
-        music = Music.objects.create(
-            song_name=data.song_name,
-            description=data.description,
-            singer=singer,   # ✅ FK object
+        return Music.objects.create(
+            song_name=params.song_name,
+            description=params.description,
+            singer=singer
         )
 
-        data = MusicResponse(music).data
-        return Response(
-            Utils.success_response("Music created successfully", data),
-            status=status.HTTP_201_CREATED
-        )
-
-    @staticmethod
-    def get_all(request):
+    @Common(
+        response_handler=MusicResponse,
+        message="Data fetched successfully"
+    ).exception_handler
+    def get_all(self, request):
         limit = int(request.query_params.get("limit", 10))
         offset = int(request.query_params.get("offset", 0))
 
         queryset = Music.objects.all()
-        total = queryset.count()
+        return queryset[offset: offset + limit]
 
-        musics = queryset[offset: offset + limit]
-        data = MusicResponse(musics, many=True).data
-
-        return Response(
-            Utils.paginated_response(
-                data=data,
-                total=total,
-                limit=limit,
-                offset=offset,
-                message="Data fetched successfully"
-            )
-        )
-
-    @staticmethod
-    def get_one(id):
-        music = Music.objects.filter(id=id).first()
+    @Common(
+        response_handler=MusicResponse,
+        message="Data fetched successfully"
+    ).exception_handler
+    def get_one(self, music_id: int):
+        music = Music.objects.filter(id=music_id).first()
         if not music:
-            return Response(
-                Utils.error_response("Music not found", f"id {id} does not exist"),
-                status=404
-            )
-        data = MusicResponse(music).data
-        return Response(Utils.success_response("Data fetched successfully", data))
+            raise ValueError(f"id {music_id} does not exist")
+        return music
 
-    @staticmethod
-    def update(id, data):
-        music = Music.objects.filter(id=id).first()
+    @Common(
+        response_handler=MusicResponse,
+        message="Music updated successfully"
+    ).exception_handler
+    def update(self, music_id: int, params):
+        music = Music.objects.filter(id=music_id).first()
         if not music:
-            return Response(
-                Utils.error_response("Music not found", f"id {id} does not exist"),
-                status=404
-            )
+            raise ValueError(f"id {music_id} does not exist")
 
-        update_data = asdict(data)
+        data = asdict(params)
 
-        if update_data.get("singer") is not None:
-            singer = Singer.get_by_name(update_data["singer"])
+        if data.get("singer"):
+            singer = Singer.get_by_name(data["singer"])
             if not singer:
-                return Response(
-                    Utils.error_response(
-                        "Singer not found",
-                        f"singer_name '{update_data['singer']}' does not exist"
-                    ),
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                raise ValueError(f"singer_name '{data['singer']}' does not exist")
             music.singer = singer
 
-        for field in ["song_name", "description"]:
-            value = update_data.get(field)
-            if value is not None:
-                setattr(music, field, value)
+        if data.get("song_name") is not None:
+            music.song_name = data["song_name"]
+
+        if data.get("description") is not None:
+            music.description = data["description"]
 
         music.save()
-        data = MusicResponse(music).data
-        return Response(Utils.success_response("Music updated successfully", data))
+        return music
 
-    @staticmethod
-    def delete(id):
-        music = Music.objects.filter(id=id).first()
+    @Common(
+        message="Music deleted successfully"
+    ).exception_handler
+    def delete(self, music_id: int):
+        music = Music.objects.filter(id=music_id).first()
         if not music:
-            return Response(
-                Utils.error_response("Music not found", f"id {id} does not exist"),
-                status=404
-            )
+            raise ValueError(f"id {music_id} does not exist")
 
         music.delete()
-        return Response(Utils.success_response("Music deleted successfully"))
+        return {}
