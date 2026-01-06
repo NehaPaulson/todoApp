@@ -25,7 +25,7 @@ class Utils:
             "error": error
         }
 
-    # ✅ NEW: limit–offset pagination
+
     @staticmethod
     def paginated_response(
         *,

@@ -19,13 +19,19 @@ from django.urls import path
 
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from .views import hello_view
+
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/hello/', hello_view),
+
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+
     path('api/todoapp/', include('feature.todoapp.urls')),
     path('api/music/', include('feature.music.urls')),
     path('api/singer/', include('feature.singer.urls')),
 ]
+

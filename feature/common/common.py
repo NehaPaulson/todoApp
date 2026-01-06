@@ -16,13 +16,13 @@ class Common:
             try:
                 result = func(*args, **kwargs)
 
-                # If view already returned Response → pass through
+
                 if isinstance(result, Response):
                     return result
 
                 many = isinstance(result, (list, tuple, QuerySet))
 
-                # Apply response serializer if provided
+
                 if self.response_handler:
                     serializer = self.response_handler(result, many=many)
                     result = serializer.data
